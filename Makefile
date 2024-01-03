@@ -175,6 +175,12 @@ endif
 
 UEXTRA=
 ifeq ($(LAB),util)
+# lab1添加
+UPROGS += \
+	$U/_sleep\
+	$U/_pingpong\
+	$U/_primes\
+	$U/_find
 	UEXTRA += user/xargstest.sh
 endif
 
