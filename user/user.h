@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct sysinfo;     // 提前为sysinfo()函数的参数声明结构体
 
 // system calls
 int fork(void);
@@ -23,6 +24,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int trace(int);    // lab2添加原型，根据trace.c的函数调用发现，trace函数应该有int类型的返回值
+int sysinfo(struct sysinfo*);
 
 // ulib.c
 int stat(const char*, struct stat*);

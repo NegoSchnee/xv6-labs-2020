@@ -34,7 +34,7 @@ void
 freerange(void *pa_start, void *pa_end)
 {
   char *p;
-  p = (char*)PGROUNDUP((uint64)pa_start);
+  p = (char*)PGROUNDUP((uint64)pa_start);    // 地址的后12位都置零
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
     kfree(p);
 }
@@ -79,4 +79,20 @@ kalloc(void)
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
+}
+
+// 空闲页所占的字节数
+uint64
+mem_freesz(void) {
+  // return PHYSTOP - (long)end;  // end没改过，起边界作用。所以不能直接返回差值
+  uint64 pages = 0;
+  // 注意！！！修改之前先加锁，修改完毕再释放锁！
+  acquire(&kmem.lock);  // 加锁
+  struct run *r = kmem.freelist;
+  while (r) {
+    r = r->next;
+    pages++;
+  }
+  release(&kmem.lock);  // 释放锁
+  return pages * PGSIZE;
 }

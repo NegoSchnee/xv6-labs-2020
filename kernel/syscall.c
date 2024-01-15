@@ -7,6 +7,8 @@
 #include "syscall.h"
 #include "defs.h"
 
+#include "sysinfo.h"  // 包含struct的头文件
+
 // Fetch the uint64 at addr from the current process.
 int
 fetchaddr(uint64 addr, uint64 *ip)
@@ -32,12 +34,12 @@ fetchstr(uint64 addr, char *buf, int max)
 }
 
 static uint64
-argraw(int n)
+argraw(int n)    // 检索用户寄存器里面的内容，存的是第n个系统调用参数
 {
   struct proc *p = myproc();
   switch (n) {
   case 0:
-    return p->trapframe->a0;
+    return p->trapframe->a0;  // p->trapframe->寄存器 存储用户参数
   case 1:
     return p->trapframe->a1;
   case 2:
@@ -104,6 +106,8 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
+extern uint64 sys_trace(void);  // 注意！需要加这句，否则下面对应的函数指针没法识别到！！！
+extern uint64 sys_info(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -127,7 +131,38 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_trace]   sys_trace,
+[SYS_sysinfo] sys_info,
 };
+
+// 系统调用对应的名字数组
+static char *syscallnames[] = {
+  "",    // 0号为空
+  "fork",
+  "exit",
+  "wait",
+  "pipe",
+  "read",
+  "kill",
+  "exec",
+  "fstat",
+  "chdir",
+  "dup",
+  "getpid",
+  "sbrk",
+  "sleep",
+  "uptime",
+  "open",
+  "write",
+  "mknod",
+  "unlink",
+  "link",
+  "mkdir",
+  "close",
+  "trace",
+  "sysinfo",
+};
+
 
 void
 syscall(void)
@@ -135,10 +170,13 @@ syscall(void)
   int num;
   struct proc *p = myproc();
 
-  num = p->trapframe->a7;
+  num = p->trapframe->a7;    // a7存的是系统调用号
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    p->trapframe->a0 = syscalls[num]();
-  } else {
+    p->trapframe->a0 = syscalls[num]();    // 返回值存在p->trapframe->a0中
+    if (p->tracemask & (1 << num))  // 判断当前系统调用是否需要跟踪
+      printf("%d: syscall %s -> %d\n", p->pid, syscallnames[num], p->trapframe->a0);
+  }
+  else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
     p->trapframe->a0 = -1;

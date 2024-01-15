@@ -6,6 +6,11 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"  // 包含struct的头文件
+
+extern int mem_freesz(void);
+extern int procnum(void);
+
 
 uint64
 sys_exit(void)
@@ -95,3 +100,34 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// lab2
+uint64
+sys_trace(void) {
+  // struct proc *p = myproc();
+  int msk;
+  if(argint(0, &msk) < 0)    // 调用argraw()，其会通过struct proc *p = myproc(); 和 p->trapframe->寄存器  来获取系统调用参数
+    return -1;
+  myproc()->tracemask |= msk;  // 使用 |=
+  return 0;
+}
+
+// 类似于trace的实验过程。
+// 没有实现sysinfo()函数，而是通过usys.pl生成系统调用存根来调用sys_info()函数。所以要写sys_info()函数。
+// 要同步修改：syscall.h中的系统调用宏，syscall.c中的syscalls数组（记得extern函数）
+int
+sys_info(void) {
+  uint64 addr;
+    // 从寄存器中获取相应用户空间的地址
+  if (argaddr(0, &addr) < 0)  // 注意n的设置，是0，不要直接复制成1
+    return -1;
+  // 往结构体填充对应数据
+  struct sysinfo info;  // 不能直接写成指针，因为没初始化
+  info.freemem = mem_freesz();
+  info.nproc = procnum();
+  // 内核把结构体中数据写回用户空间
+  struct proc *p = myproc();
+  if (copyout(p->pagetable, addr, (char *)&info, sizeof(info)) < 0)
+    return -1;
+  return 0;
+};

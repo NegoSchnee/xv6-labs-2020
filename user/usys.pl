@@ -36,3 +36,5 @@ entry("getpid");
 entry("sbrk");
 entry("sleep");
 entry("uptime");
+entry("trace");    # lab2添加存根。注意这里注释要用#，不要用//
+entry("sysinfo");

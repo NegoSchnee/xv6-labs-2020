@@ -102,6 +102,7 @@ allocproc(void)
       release(&p->lock);
     }
   }
+  p->tracemask = 0;    // 追踪掩码初始化为0
   return 0;
 
 found:
@@ -274,6 +275,8 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
+
+  np->tracemask = p->tracemask;    // 把父进程的tracemask复制到子进程中
 
   np->parent = p;
 
@@ -692,4 +695,18 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// 状态为UNUSED的进程的数量
+uint64
+procnum(void) {
+  uint64 cnt = 0;
+  struct proc *p;
+  for (p = proc; p < &proc[NPROC]; p++) {    // 不用遍历CPU，直接遍历进程数组即可。CPU中的进程跟这个进程数组是绑定在一起的。
+    // acquire(&p->lock);    // 只读不写，可以不加锁和释放锁，如果有写操作需要加锁
+    if (p->state != UNUSED)
+      cnt++;
+    // release(&p->lock);
+  }
+  return cnt;
 }

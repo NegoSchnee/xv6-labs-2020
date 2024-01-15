@@ -103,4 +103,9 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  // 用于系统调用的新变量，跟踪掩码（做实验时由于阅读理解卡了很久，不是把读到的参数重新赋值给某个变量，而是重新写一个新变量存参数）
+  // 相应地，在allocproc()中将新进程的跟踪掩码初始化为0
+  uint64 tracemask; 
+
 };
